@@ -124,12 +124,12 @@ const App = () => {
   return (
     <div className="container max-w-4xl mx-auto p-6 space-y-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        File Comparison Tool
+        ファイル比較ツール
       </h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>ZIP File Upload</CardTitle>
+          <CardTitle>ZIPファイル</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="w-full max-w-sm items-center gap-1.5">
@@ -153,10 +153,10 @@ const App = () => {
                   checked={includeTopDir}
                   onCheckedChange={handleToggleTopDir}
                 />
-                <Label htmlFor="include-top-dir">Include top directory</Label>
+                <Label htmlFor="include-top-dir">トップのディレクトリを含める</Label>
               </div>
               <p className="text-sm text-gray-500">
-                Files in ZIP: {zipFiles.length}
+                ZIP内のファイル数: {zipFiles.length}
               </p>
             </div>
           )}
@@ -165,7 +165,7 @@ const App = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Expected File List</CardTitle>
+          <CardTitle>ファイルリスト</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -182,7 +182,7 @@ const App = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="manual-input">Or Enter Manually</Label>
+              <Label htmlFor="manual-input">手動で入力する場合はこちら</Label>
               <Textarea
                 id="manual-input"
                 placeholder="/docs/example/index.html&#10;/docs/example/css/style.css&#10;/docs/example/img/image.png"
@@ -194,7 +194,7 @@ const App = () => {
           </div>
           {expectedFiles.length > 0 && (
             <p className="text-sm text-gray-500">
-              Expected files: {expectedFiles.length}
+              ファイルリスト内のファイル数: {expectedFiles.length}
             </p>
           )}
         </CardContent>
@@ -205,7 +205,7 @@ const App = () => {
         (zipFiles.length > 0 && expectedFiles.length > 0)) && (
         <Card>
           <CardHeader>
-            <CardTitle>Comparison Results</CardTitle>
+            <CardTitle>比較結果</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {comparison.missing.length === 0 &&
@@ -214,17 +214,14 @@ const App = () => {
             expectedFiles.length > 0 ? (
               <Alert variant="default" className="bg-green-50 border-green-200">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-800">Perfect Match!</AlertTitle>
-                <AlertDescription className="text-green-700">
-                  All expected files are present in the ZIP file.
-                </AlertDescription>
+                <AlertTitle className="text-green-800">ZIP内のファイルとファイルリストが一致しました</AlertTitle>
               </Alert>
             ) : (
               <>
                 {comparison.missing.length > 0 && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Missing Files</AlertTitle>
+                    <AlertTitle>リストに記載されているがZIP内に存在しないファイル</AlertTitle>
                     <AlertDescription>
                       <ul className="mt-2 space-y-1 font-mono text-sm">
                         {comparison.missing.map((file) => (
@@ -237,7 +234,7 @@ const App = () => {
                 {comparison.extra.length > 0 && (
                   <Alert variant="warning" className="bg-orange-50 border-orange-200">
                     <FileWarning className="h-4 w-4 text-orange-600" />
-                    <AlertTitle className="text-orange-800">Extra Files</AlertTitle>
+                    <AlertTitle className="text-orange-800">ZIPに含まれているがリストに記載が無いファイル</AlertTitle>
                     <AlertDescription>
                       <ul className="mt-2 space-y-1 font-mono text-sm text-orange-700">
                         {comparison.extra.map((file) => (
