@@ -116,6 +116,17 @@ const App = () => {
     checkForNgFiles(zipFiles, expectedFiles, files);
   };
 
+  const handleTextAreaKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const { selectionStart, selectionEnd, value } = e.target;
+      const newValue = value.substring(0, selectionStart) + '\n' + value.substring(selectionEnd);
+      e.target.value = newValue;
+      e.target.selectionStart = e.target.selectionEnd = selectionStart + 1;
+      e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+
   // ファイル比較
   const compareFiles = (actual, expected) => {
     const normalizeList = (list) => {
@@ -203,6 +214,7 @@ const App = () => {
                 placeholder="/docs/example/index.html&#10;/docs/example/css/style.css&#10;/docs/example/img/image.png"
                 value={expectedFiles.join("\n")}
                 onChange={handleTextAreaChange}
+                onKeyDown={handleTextAreaKeyDown}
                 className="font-mono min-h-[200px]"
               />
             </div>
@@ -228,6 +240,7 @@ const App = () => {
                 placeholder="/docs/example/index.html&#10;/docs/example/css/style.css&#10;/docs/example/img/image.png"
                 value={ngFiles.join("\n")}
                 onChange={handleNgFilesChange}
+                onKeyDown={handleTextAreaKeyDown}
                 className="font-mono min-h-[200px]"
               />
             </div>
