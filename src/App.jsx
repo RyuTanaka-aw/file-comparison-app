@@ -9,6 +9,10 @@ import { CheckCircle, AlertCircle, FileWarning } from "lucide-react";
 import JSZip from "jszip";
 import { createClient } from "@supabase/supabase-js";
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 const App = () => {
   const [zipFiles, setZipFiles] = useState([]);
   const [rawZipFiles, setRawZipFiles] = useState([]);
@@ -22,7 +26,6 @@ const App = () => {
   const [ngFilesInZip, setNgFilesInZip] = useState([]);
   const [ngFilesInList, setNgFilesInList] = useState([]);
   const [isEditingNgFiles, setIsEditingNgFiles] = useState(false);
-  const supabase = createClient("https://mmjkatzvedrrmqtarwwz.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tamthdHp2ZWRycm1xdGFyd3d6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyMDAzNjUsImV4cCI6MjA1MDc3NjM2NX0.WHGlAihCG6vBgTOpFRQ0iLer1TVpfDSW88p_hZy3MR8");
 
   useEffect(() => {
     const fetchNgFiles = async () => {
