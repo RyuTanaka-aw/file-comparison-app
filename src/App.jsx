@@ -13,15 +13,13 @@ const App = () => {
   const [rawZipFiles, setRawZipFiles] = useState([]);
   const [expectedFiles, setExpectedFiles] = useState([]);
   const [includeTopDir, setIncludeTopDir] = useState(false);
-  const [checkScssAndMap, setCheckScssAndMap] = useState(false);
   const [comparison, setComparison] = useState({
     missing: [],
     extra: [],
   });
-  const [scssAndMapFiles, setScssAndMapFiles] = useState({
-    inZip: [],
-    inList: [],
-  });
+  const [ngFiles, setNgFiles] = useState(['/docs/index.html', '*.scss', '*.css.map']);
+  const [ngFilesInZip, setNgFilesInZip] = useState([]);
+  const [ngFilesInList, setNgFilesInList] = useState([]);
 
   // ZIPファイルからトップディレクトリを検出
   const detectTopDirectory = (fileList) => {
@@ -108,6 +106,27 @@ const App = () => {
     compareFiles(zipFiles, files);
   };
 
+  // NGファイル入力処理
+  const handleNgFilesChange = (e) => {
+    const files = e.target.value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    setNgFiles(files);
+    checkForNgFiles(zipFiles, expectedFiles, files);
+  };
+
+  const handleTextAreaKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const { selectionStart, selectionEnd, value } = e.target;
+      const newValue = value.substring(0, selectionStart) + '\n' + value.substring(selectionEnd);
+      e.target.value = newValue;
+      e.target.selectionStart = e.target.selectionEnd = selectionStart + 1;
+      e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+
   // ファイル比較
   const compareFiles = (actual, expected) => {
     const normalizeList = (list) => {
@@ -125,25 +144,15 @@ const App = () => {
     );
     setComparison({ missing, extra });
 
-    if (checkScssAndMap) {
-      checkForScssAndMapFiles(actual, expected);
-    }
+    checkForNgFiles(actual, expected, ngFiles);
   };
 
-  const handleToggleCheckScssAndMap = (checked) => {
-    setCheckScssAndMap(checked);
-    if (checked) {
-      checkForScssAndMapFiles(zipFiles, expectedFiles);
-    } else {
-      setScssAndMapFiles({ inZip: [], inList: [] });
-    }
-  };
-
-  const checkForScssAndMapFiles = (zipFiles, expectedFiles) => {
-    const scssAndMapRegex = /\.(scss|css\.map)$/;
-    const inZip = zipFiles.filter((file) => scssAndMapRegex.test(file));
-    const inList = expectedFiles.filter((file) => scssAndMapRegex.test(file));
-    setScssAndMapFiles({ inZip, inList });
+  const checkForNgFiles = (zipFiles, expectedFiles, ngFiles) => {
+    const ngFilePatterns = ngFiles.map((file) => new RegExp(file.replace('*', '.*')));
+    const inZip = zipFiles.filter((file) => ngFilePatterns.some((pattern) => pattern.test(file)));
+    const inList = expectedFiles.filter((file) => ngFilePatterns.some((pattern) => pattern.test(file)));
+    setNgFilesInZip(inZip);
+    setNgFilesInList(inList);
   };
 
   return (
@@ -205,6 +214,7 @@ const App = () => {
                 placeholder="/docs/example/index.html&#10;/docs/example/css/style.css&#10;/docs/example/img/image.png"
                 value={expectedFiles.join("\n")}
                 onChange={handleTextAreaChange}
+                onKeyDown={handleTextAreaKeyDown}
                 className="font-mono min-h-[200px]"
               />
             </div>
@@ -214,6 +224,27 @@ const App = () => {
               ファイルリスト内のファイル数: {expectedFiles.length}
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>NGファイル</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ng-input">NGファイルを入力してください</Label>
+              <Textarea
+                id="ng-input"
+                placeholder="/docs/example/index.html&#10;/docs/example/css/style.css&#10;/docs/example/img/image.png"
+                value={ngFiles.join("\n")}
+                onChange={handleNgFilesChange}
+                onKeyDown={handleTextAreaKeyDown}
+                className="font-mono min-h-[200px]"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -230,14 +261,6 @@ const App = () => {
             />
             <Label htmlFor="include-top-dir">トップのディレクトリを含める</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="check-scss-and-map"
-              checked={checkScssAndMap}
-              onCheckedChange={handleToggleCheckScssAndMap}
-            />
-            <Label htmlFor="check-scss-and-map">.scss、.css.mapをチェックする</Label>
-          </div>
         </CardContent>
       </Card>
 
@@ -249,28 +272,28 @@ const App = () => {
             <CardTitle>比較結果</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {checkScssAndMap && (scssAndMapFiles.inZip.length > 0 || scssAndMapFiles.inList.length > 0) && (
+            {(ngFilesInZip.length > 0 || ngFilesInList.length > 0) && (
               <div className="space-y-4">
-                {scssAndMapFiles.inZip.length > 0 && (
-                  <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
-                    <FileWarning className="h-4 w-4 text-yellow-600" />
-                    <AlertTitle className="text-yellow-800">ZIPファイルに含まれている.scss、.css.mapファイル</AlertTitle>
+                {ngFilesInZip.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>ZIPファイルに含まれているNGファイル</AlertTitle>
                     <AlertDescription>
-                      <ul className="mt-2 space-y-1 font-mono text-sm text-yellow-700">
-                        {scssAndMapFiles.inZip.map((file) => (
+                      <ul className="mt-2 space-y-1 font-mono text-sm">
+                        {ngFilesInZip.map((file) => (
                           <li key={file}>{file}</li>
                         ))}
                       </ul>
                     </AlertDescription>
                   </Alert>
                 )}
-                {scssAndMapFiles.inList.length > 0 && (
-                  <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
-                    <FileWarning className="h-4 w-4 text-yellow-600" />
-                    <AlertTitle className="text-yellow-800">ファイルリストに含まれている.scss、.css.mapファイル</AlertTitle>
+                {ngFilesInList.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>ファイルリストに含まれているNGファイル</AlertTitle>
                     <AlertDescription>
-                      <ul className="mt-2 space-y-1 font-mono text-sm text-yellow-700">
-                        {scssAndMapFiles.inList.map((file) => (
+                      <ul className="mt-2 space-y-1 font-mono text-sm">
+                        {ngFilesInList.map((file) => (
                           <li key={file}>{file}</li>
                         ))}
                       </ul>
