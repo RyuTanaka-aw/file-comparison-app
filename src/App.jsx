@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle, AlertCircle, FileWarning } from "lucide-react";
 import JSZip from "jszip";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const App = () => {
   const [zipFiles, setZipFiles] = useState([]);
@@ -20,6 +25,31 @@ const App = () => {
   const [ngFiles, setNgFiles] = useState(['/docs/index.html', '*.scss', '*.css.map']);
   const [ngFilesInZip, setNgFilesInZip] = useState([]);
   const [ngFilesInList, setNgFilesInList] = useState([]);
+  const [isEditingNgFiles, setIsEditingNgFiles] = useState(false);
+
+  useEffect(() => {
+    const fetchNgFiles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ng_list')
+          .select('file_list')
+          .eq('id', 1)
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        const files = data.file_list.split("\n").map((line) => line.trim()).filter(Boolean);
+        setNgFiles(files);
+        checkForNgFiles(zipFiles, expectedFiles, files);
+      } catch (error) {
+        console.error("Error fetching NG files from Supabase:", error);
+      }
+    };
+
+    fetchNgFiles();
+  }, []);
 
   // ZIPファイルからトップディレクトリを検出
   const detectTopDirectory = (fileList) => {
@@ -155,6 +185,27 @@ const App = () => {
     setNgFilesInList(inList);
   };
 
+  const handleEditNgFiles = () => {
+    setIsEditingNgFiles(true);
+  };
+
+  const handleSaveNgFiles = async () => {
+    try {
+      const { error } = await supabase
+        .from('ng_list')
+        .update({ file_list: ngFiles.join("\n") })
+        .eq('id', 1);
+
+      if (error) {
+        throw error;
+      }
+
+      setIsEditingNgFiles(false);
+    } catch (error) {
+      console.error("Error updating NG files in Supabase:", error);
+    }
+  };
+
   return (
     <div className="container max-w-4xl mx-auto p-6 space-y-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
@@ -234,7 +285,7 @@ const App = () => {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="ng-input">NGファイルを入力してください</Label>
+              <Label htmlFor="ng-input" className="cursor-default">NGファイルを変更するには編集ボタンをクリックしてください</Label>
               <Textarea
                 id="ng-input"
                 placeholder="/docs/example/index.html&#10;/docs/example/css/style.css&#10;/docs/example/img/image.png"
@@ -242,7 +293,12 @@ const App = () => {
                 onChange={handleNgFilesChange}
                 onKeyDown={handleTextAreaKeyDown}
                 className="font-mono min-h-[200px]"
+                disabled={!isEditingNgFiles}
               />
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={handleEditNgFiles} disabled={isEditingNgFiles}>編集</Button>
+              <Button onClick={handleSaveNgFiles} disabled={!isEditingNgFiles}>保存</Button>
             </div>
           </div>
         </CardContent>
