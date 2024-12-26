@@ -13,16 +13,13 @@ const App = () => {
   const [rawZipFiles, setRawZipFiles] = useState([]);
   const [expectedFiles, setExpectedFiles] = useState([]);
   const [includeTopDir, setIncludeTopDir] = useState(false);
-  const [checkScssAndMap, setCheckScssAndMap] = useState(false);
   const [comparison, setComparison] = useState({
     missing: [],
     extra: [],
   });
-  const [scssAndMapFiles, setScssAndMapFiles] = useState({
-    inZip: [],
-    inList: [],
-  });
-  const [ngFiles, setNgFiles] = useState(['/docs/index.html']);
+  const [ngFiles, setNgFiles] = useState(['/docs/index.html', '*.scss', '*.css.map']);
+  const [ngFilesInZip, setNgFilesInZip] = useState([]);
+  const [ngFilesInList, setNgFilesInList] = useState([]);
 
   // ZIPファイルからトップディレクトリを検出
   const detectTopDirectory = (fileList) => {
@@ -136,32 +133,15 @@ const App = () => {
     );
     setComparison({ missing, extra });
 
-    if (checkScssAndMap) {
-      checkForScssAndMapFiles(actual, expected);
-    }
     checkForNgFiles(actual, expected, ngFiles);
   };
 
-  const handleToggleCheckScssAndMap = (checked) => {
-    setCheckScssAndMap(checked);
-    if (checked) {
-      checkForScssAndMapFiles(zipFiles, expectedFiles);
-    } else {
-      setScssAndMapFiles({ inZip: [], inList: [] });
-    }
-  };
-
-  const checkForScssAndMapFiles = (zipFiles, expectedFiles) => {
-    const scssAndMapRegex = /\.(scss|css\.map)$/;
-    const inZip = zipFiles.filter((file) => scssAndMapRegex.test(file));
-    const inList = expectedFiles.filter((file) => scssAndMapRegex.test(file));
-    setScssAndMapFiles({ inZip, inList });
-  };
-
   const checkForNgFiles = (zipFiles, expectedFiles, ngFiles) => {
-    const inZip = zipFiles.filter((file) => ngFiles.includes(file));
-    const inList = expectedFiles.filter((file) => ngFiles.includes(file));
-    setScssAndMapFiles({ inZip, inList });
+    const ngFilePatterns = ngFiles.map((file) => new RegExp(file.replace('*', '.*')));
+    const inZip = zipFiles.filter((file) => ngFilePatterns.some((pattern) => pattern.test(file)));
+    const inList = expectedFiles.filter((file) => ngFilePatterns.some((pattern) => pattern.test(file)));
+    setNgFilesInZip(inZip);
+    setNgFilesInList(inList);
   };
 
   return (
@@ -268,14 +248,6 @@ const App = () => {
             />
             <Label htmlFor="include-top-dir">トップのディレクトリを含める</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="check-scss-and-map"
-              checked={checkScssAndMap}
-              onCheckedChange={handleToggleCheckScssAndMap}
-            />
-            <Label htmlFor="check-scss-and-map">.scss、.css.mapをチェック含める</Label>
-          </div>
         </CardContent>
       </Card>
 
@@ -287,58 +259,28 @@ const App = () => {
             <CardTitle>比較結果</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {checkScssAndMap && (scssAndMapFiles.inZip.length > 0 || scssAndMapFiles.inList.length > 0) && (
+            {(ngFilesInZip.length > 0 || ngFilesInList.length > 0) && (
               <div className="space-y-4">
-                {scssAndMapFiles.inZip.length > 0 && (
-                  <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
-                    <FileWarning className="h-4 w-4 text-yellow-600" />
-                    <AlertTitle className="text-yellow-800">ZIPファイルに含まれている.scss、.css.mapファイル</AlertTitle>
-                    <AlertDescription>
-                      <ul className="mt-2 space-y-1 font-mono text-sm text-yellow-700">
-                        {scssAndMapFiles.inZip.map((file) => (
-                          <li key={file}>{file}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {scssAndMapFiles.inList.length > 0 && (
-                  <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
-                    <FileWarning className="h-4 w-4 text-yellow-600" />
-                    <AlertTitle className="text-yellow-800">ファイルリストに含まれている.scss、.css.mapファイル</AlertTitle>
-                    <AlertDescription>
-                      <ul className="mt-2 space-y-1 font-mono text-sm text-yellow-700">
-                        {scssAndMapFiles.inList.map((file) => (
-                          <li key={file}>{file}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-            {ngFiles.length > 0 && (
-              <div className="space-y-4">
-                {scssAndMapFiles.inZip.length > 0 && (
+                {ngFilesInZip.length > 0 && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>ZIPファイルに含まれているNGファイル</AlertTitle>
                     <AlertDescription>
                       <ul className="mt-2 space-y-1 font-mono text-sm">
-                        {scssAndMapFiles.inZip.map((file) => (
+                        {ngFilesInZip.map((file) => (
                           <li key={file}>{file}</li>
                         ))}
                       </ul>
                     </AlertDescription>
                   </Alert>
                 )}
-                {scssAndMapFiles.inList.length > 0 && (
+                {ngFilesInList.length > 0 && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>ファイルリストに含まれているNGファイル</AlertTitle>
                     <AlertDescription>
                       <ul className="mt-2 space-y-1 font-mono text-sm">
-                        {scssAndMapFiles.inList.map((file) => (
+                        {ngFilesInList.map((file) => (
                           <li key={file}>{file}</li>
                         ))}
                       </ul>
